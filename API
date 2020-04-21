@@ -1,0 +1,69 @@
+API = {}
+Command = {}
+
+Commands = {}
+local Prefix = ';'
+
+Command.__index = Command
+
+Command.Create = function(_, name, callback)
+	local cmd = {}
+	setmetatable(cmd, Command)
+	cmd.name = name
+	cmd.callback = callback
+	return cmd
+end
+
+Command.Run = function(_, args)
+	_.callback(unpack(args))
+end
+
+Command.GetName = function(_)
+	return _.name
+end
+
+API.FindCommandFromName = function(_, name)
+    for i,v in pairs(Commands) do
+        if v:GetName() == name then
+            return v
+        end
+    end
+end
+
+API.SetPrefix = function(_, prefix)
+    Prefix = prefix
+end
+
+API.GetPrefix = function (_)
+    return Prefix
+end
+
+API.AddCommand = function(_, name, args)
+	table.insert(Commands, Command:Create(name, callback))
+end
+
+API.RunCommand = function(_, name, args)
+	local cmd = API:FindCommandFromName(name)
+	if not cmd then return false end
+	cmd:Run(args)
+	return true
+end	
+
+API.OnChatted = function(msg)
+    local function strStarts(String, Start)
+        return string.sub(String, 1, string.len(Start)) == Start
+    end
+
+    if strStarts(msg, API:GetPrefix()) then
+        local args = {}
+        local name = ""
+        for i in string.gmatch(msg, "%S+") do
+            table.insert(args, i)
+        end
+        name = string.gsub(args[1], ",", "")
+        table.remove(args, 1)
+        API:RunCommand(name, args)
+    end
+end
+
+return API
